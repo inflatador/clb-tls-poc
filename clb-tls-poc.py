@@ -107,16 +107,25 @@ def get_auth_token(username,password):
 
     return auth_token, headers
 
+def show_tls_and_cipher_vers(clb_endpoint, headers, clb_id):
+    clb_url = "{}/loadbalancers/{}/ssltermination".format(clb_endpoint, clb_id)
+    current_clb_config = requests.get (url=clb_url, headers=headers)
+    security_protocols = current_clb_config.json()["sslTermination"]["securityProtocols"]
+    for security_protocol in security_protocols:
+        if security_protocol["securityProtocolStatus"] == "ENABLED":
+            print ("TLS version {} is enabled.".format(security_protocol["securityProtocolName"]))
+
+
 
 #begin main function
 @plac.annotations(
-    region = plac.Annotation("Rackspace Cloud Servers region"),
-    clb_uuid = plac.Annotation("Cloud Server UUID"),
+    region = plac.Annotation("Rackspace Cloud region"),
+    clb_id = plac.Annotation("Cloud Load Balancer ID"),
     tls_vers = plac.Annotation("TLS version to disable",'positional',
                None, str, ["1.0", "1.1"], None)
                 )
 
-def main(region, clb_uuid, tls_vers):
+def main(region, clb_id, tls_vers):
     username, password = getset_keyring_credentials()
 
     auth_token, headers = get_auth_token(username, password)
@@ -124,7 +133,9 @@ def main(region, clb_uuid, tls_vers):
     clb_endpoint = find_endpoints(auth_token, headers, region,
                   desired_service="cloudLoadBalancers")
 
-    print (clb_endpoint)
+    # print (clb_endpoint)
+
+    show_tls_and_cipher_vers(clb_endpoint, headers, clb_id)
 
 if __name__ == '__main__':
     import plac
