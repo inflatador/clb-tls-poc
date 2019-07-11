@@ -109,11 +109,31 @@ def get_auth_token(username,password):
 
 def show_tls_and_cipher_vers(clb_endpoint, headers, clb_id):
     clb_url = "{}/loadbalancers/{}/ssltermination".format(clb_endpoint, clb_id)
-    current_clb_config = requests.get (url=clb_url, headers=headers)
+    current_clb_config = requests.get(url=clb_url, headers=headers)
+    print ("Here's the keys: {}".format(current_clb_config.json()["sslTermination"].keys()))
     security_protocols = current_clb_config.json()["sslTermination"]["securityProtocols"]
     for security_protocol in security_protocols:
         if security_protocol["securityProtocolStatus"] == "ENABLED":
             print ("TLS version {} is enabled.".format(security_protocol["securityProtocolName"]))
+    return clb_url
+#
+def disable_tls_vers(clb_url, headers, tls_vers):
+    payload = {
+                  "sslTermination": {
+                    "securityProtocols": [
+                      {
+                        "securityProtocolName": "TLS_10",
+                        "securityProtocolStatus": "DISABLED"
+                      },
+                      {
+                        "securityProtocolName": "TLS_11",
+                        "securityProtocolStatus": "DISABLED"
+                      }
+                    ]
+                  }
+                }
+    disable_tls = requests.put(url=clb_url, headers=headers, json=payload)
+    print (disable_tls.json())
 
 
 
@@ -135,7 +155,9 @@ def main(region, clb_id, tls_vers):
 
     # print (clb_endpoint)
 
-    show_tls_and_cipher_vers(clb_endpoint, headers, clb_id)
+    clb_url = show_tls_and_cipher_vers(clb_endpoint, headers, clb_id)
+
+    disable_tls_vers(clb_url, headers, tls_vers)
 
 if __name__ == '__main__':
     import plac
